@@ -30,6 +30,10 @@ function is-terminal-active() {
             term=iterm2
         elif [[ "$TERM_PROGRAM" == 'Apple_Terminal' ]] || [[ -n "$TERM_SESSION_ID" ]]; then
             term=apple-terminal
+        elif [[ "$TERM_PROGRAM" == 'vscode' ]]; then
+            # integrated VS Code terminal doesn't expose window state via AppleScript;
+            # assume active so notifications proceed in the integrated terminal.
+            return 0
         else
             return 2
         fi
@@ -76,6 +80,9 @@ function zsh-notify() {
         app_id="com.googlecode.iterm2"
     elif [[ "$TERM_PROGRAM" == 'Apple_Terminal' ]] || [[ -n "$TERM_SESSION_ID" ]]; then
         app_id="com.apple.terminal"
+    elif [[ "$TERM_PROGRAM" == 'vscode' ]]; then
+        # no app id for VS Code integrated terminal; leave app_id empty
+        app_id=""
     fi
 
     if [[ -n "$app_id" ]]; then
@@ -94,6 +101,8 @@ function zsh-notify() {
         -title "${title}" <<< "$message" > /dev/null 2>&1 &!
 
     if zstyle -t ':notify:' activate-terminal; then
-        osascript <<< "tell app id \"$app_id\" to activate" 1>/dev/null
+        if [[ -n "$app_id" ]]; then
+            osascript <<< "tell app id \"$app_id\" to activate" 1>/dev/null
+        fi
     fi
 }
